@@ -2,11 +2,14 @@ package site.wetsion.security.shield.web;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import site.wetsion.security.shield.auth.SysUserDetails;
 import site.wetsion.security.shield.domain.SysUser;
 import site.wetsion.security.shield.service.SysUserService;
 
@@ -32,7 +35,7 @@ public class IndexController {
         return "login";
     }
 
-    @PostMapping("/login")
+//    @PostMapping("/login")
     public String loginP(String username, String password) {
         SysUser user =
                 sysUserService.getOne(
@@ -45,7 +48,10 @@ public class IndexController {
     }
 
     @GetMapping("/")
-    public String index() {
+    public String index(Model model) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        SysUserDetails sysUserDetails = (SysUserDetails) authentication.getPrincipal();
+        model.addAttribute("roles", sysUserDetails.getAuthorities());
         return "index";
     }
 }

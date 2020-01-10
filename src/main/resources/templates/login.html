@@ -6,9 +6,9 @@
 </head>
 <body>
 登陆页<br/>
-<form method="post" action="/login">
-    用户名：<input type="text" name="username" id="username"/><br/>
-    密码：<input type="password" name="password" id="password"/><br/>
+<form method="post" th:action="@{/doLogin}">
+    用户名：<input type="text" name="username" id="username" value="user"/><br/>
+    密码：<input type="password" name="password" id="password" value="123456"/><br/>
     <button type="submit">login</button>
     <div th:if="${msg != null}" th:text="${msg}"></div>
 </form>

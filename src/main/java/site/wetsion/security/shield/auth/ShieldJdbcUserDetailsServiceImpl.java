@@ -15,7 +15,7 @@ import site.wetsion.security.shield.service.SysUserService;
  * @date 2020/1/9 2:59 PM
  */
 @Component
-public class JdbcUserDetailsServiceImpl implements UserDetailsService {
+public class ShieldJdbcUserDetailsServiceImpl implements UserDetailsService {
 
     @Autowired
     SysUserService sysUserService;
