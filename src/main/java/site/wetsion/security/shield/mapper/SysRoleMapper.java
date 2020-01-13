@@ -5,6 +5,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
 import site.wetsion.security.shield.domain.SysRole;
 
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -28,4 +29,8 @@ public interface SysRoleMapper extends BaseMapper<SysRole> {
             "left join study.sys_user_role sur on sur.role_id = sr.id " +
             "where sur.user_id = #{userId}")
     Set<SysRole> getAllRolesByUserId(Long userId);
+
+    @Select("select r.* from sys_role r left join sys_role_permission srp " +
+            "on r.id = srp.role_id where srp.permission_id = #{permissionId}")
+    List<SysRole> findRoleByPermission(Long permissionId);
 }

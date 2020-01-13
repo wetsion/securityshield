@@ -20,12 +20,16 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.access.expression.WebExpressionVoter;
 import org.springframework.security.web.access.intercept.FilterInvocationSecurityMetadataSource;
 import org.springframework.security.web.access.intercept.FilterSecurityInterceptor;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import site.wetsion.security.shield.auth.RestDeniedAuthenticationEntryPoint;
+import site.wetsion.security.shield.filter.JwtFilter;
 import site.wetsion.security.shield.utils.SecurityConstants;
 
 import javax.servlet.ServletException;
@@ -54,7 +58,16 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     private AccessDeniedHandler urlAccessDeniedHandler;
 
     @Autowired
+    private AuthenticationEntryPoint authenticationEntryPoint;
+
+    @Autowired
     private FilterInvocationSecurityMetadataSource urlPermissionFilterInvocationSecurityMetadataSource;
+
+    @Autowired
+    private AccessDecisionManager urlAccessDecisionManager;
+
+    @Autowired
+    private JwtFilter jwtFilter;
 
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
@@ -70,11 +83,13 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
                         @Override
                         public <O extends FilterSecurityInterceptor> O postProcess(O object) {
+                            // 配置 SecurityMetadataSource
                             object.setSecurityMetadataSource(urlPermissionFilterInvocationSecurityMetadataSource);
                             return object;
                         }
                     })
-                    .accessDecisionManager(accessDecisionManager())
+                    // 配置 accessDecisionManager
+                    .accessDecisionManager(urlAccessDecisionManager)
                     .antMatchers(SecurityConstants.PERMIT_URL).permitAll()
                     .antMatchers("/admin/**").hasAuthority("ROLE_ADMIN")
                     .anyRequest().authenticated()
@@ -94,16 +109,23 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .csrf()
                     .disable()
                 // 异常 错误页处理
-                .exceptionHandling().accessDeniedHandler(urlAccessDeniedHandler)
+                .exceptionHandling()
+                    // 匿名用户访问异常处理
+                    .authenticationEntryPoint(authenticationEntryPoint)
+                    // 已认证的用户访问异常处理
+                    .accessDeniedHandler(urlAccessDeniedHandler)
+                .and()
+                // 增加 jwt 的filter
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
         ;
     }
 
-    @Bean
-    public AccessDecisionManager accessDecisionManager() {
-        List<AccessDecisionVoter<? extends Object>> decisionVoters
-                = Arrays.asList(new WebExpressionVoter());
-        return new AffirmativeBased(decisionVoters);
-    }
+//    @Bean
+//    public AccessDecisionManager accessDecisionManager() {
+//        List<AccessDecisionVoter<? extends Object>> decisionVoters
+//                = Arrays.asList(new WebExpressionVoter());
+//        return new AffirmativeBased(decisionVoters);
+//    }
 
     @Bean
     public PasswordEncoder passwordEncoder() {

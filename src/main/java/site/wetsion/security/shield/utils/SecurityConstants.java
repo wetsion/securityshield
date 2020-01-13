@@ -8,4 +8,6 @@ package site.wetsion.security.shield.utils;
 public class SecurityConstants {
 
     public final static String[] PERMIT_URL = {"/login", "/logout", "/403", "/404"};
+
+    public final static String TOKEN_KEY = "Authorization";
 }
