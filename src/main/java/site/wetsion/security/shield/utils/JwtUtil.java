@@ -40,7 +40,7 @@ public class JwtUtil {
         return Jwts.builder()
                 .setClaims(claims)
                 .setExpiration(new Date(Instant.now().toEpochMilli() + EXPIRE_TIME))
-                .signWith(SignatureAlgorithm.ES512, SALT)
+                .signWith(SignatureAlgorithm.HS512, SALT)
                 .compact();
     }
 

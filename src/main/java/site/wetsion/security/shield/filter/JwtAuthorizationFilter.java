@@ -19,18 +19,20 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 /**
- * 拦截jwt的filter
+ * 拦截请求，jwt 鉴权 的filter
  *
  * @author weixin
  * @version 1.0
  * @CLassName JwtFilter
  * @date 2020/1/13 6:55 PM
  */
-@Component
-public class JwtFilter extends OncePerRequestFilter {
+public class JwtAuthorizationFilter extends OncePerRequestFilter {
 
-    @Autowired
     private UserDetailsService shieldJdbcUserDetailsServiceImpl;
+
+    public JwtAuthorizationFilter(UserDetailsService userDetailsService) {
+        this.shieldJdbcUserDetailsServiceImpl = userDetailsService;
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, FilterChain filterChain) throws ServletException, IOException {

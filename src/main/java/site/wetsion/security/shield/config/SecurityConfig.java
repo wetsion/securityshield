@@ -4,15 +4,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.access.AccessDecisionManager;
-import org.springframework.security.access.AccessDecisionVoter;
-import org.springframework.security.access.vote.AffirmativeBased;
-import org.springframework.security.access.vote.AuthenticatedVoter;
-import org.springframework.security.access.vote.RoleVoter;
-import org.springframework.security.access.vote.UnanimousBased;
-import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.annotation.ObjectPostProcessor;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.core.Authentication;
@@ -22,22 +17,22 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.access.AccessDeniedHandler;
-import org.springframework.security.web.access.expression.WebExpressionVoter;
 import org.springframework.security.web.access.intercept.FilterInvocationSecurityMetadataSource;
 import org.springframework.security.web.access.intercept.FilterSecurityInterceptor;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import site.wetsion.security.shield.auth.RestDeniedAuthenticationEntryPoint;
-import site.wetsion.security.shield.filter.JwtFilter;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import site.wetsion.security.shield.filter.JwtAuthenticationFilter;
+import site.wetsion.security.shield.filter.JwtAuthorizationFilter;
+import site.wetsion.security.shield.handler.SecurityAuthenticationFailHandler;
+import site.wetsion.security.shield.handler.SecurityAuthenticationSuccessHandler;
 import site.wetsion.security.shield.utils.SecurityConstants;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
 
 /**
  *
@@ -52,9 +47,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     private UserDetailsService shieldJdbcUserDetailsServiceImpl;
 
     @Autowired
-    private AuthenticationProvider shieldAuthenticationProvider;
-
-    @Autowired
     private AccessDeniedHandler urlAccessDeniedHandler;
 
     @Autowired
@@ -66,12 +58,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Autowired
     private AccessDecisionManager urlAccessDecisionManager;
 
-    @Autowired
-    private JwtFilter jwtFilter;
-
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-        // auth.authenticationProvider(shieldAuthenticationProvider);
         auth.userDetailsService(shieldJdbcUserDetailsServiceImpl);
     }
 
@@ -114,18 +102,28 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                     .authenticationEntryPoint(authenticationEntryPoint)
                     // 已认证的用户访问异常处理
                     .accessDeniedHandler(urlAccessDeniedHandler)
-                .and()
-                // 增加 jwt 的filter
-                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+        ;
+        http
+                .addFilterAt(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
+//                .addFilterBefore(jwtAuthorizationFilter(shieldJdbcUserDetailsServiceImpl),
+//                        UsernamePasswordAuthenticationFilter.class)
         ;
     }
 
-//    @Bean
-//    public AccessDecisionManager accessDecisionManager() {
-//        List<AccessDecisionVoter<? extends Object>> decisionVoters
-//                = Arrays.asList(new WebExpressionVoter());
-//        return new AffirmativeBased(decisionVoters);
-//    }
+    @Bean
+    public JwtAuthenticationFilter jwtAuthenticationFilter() throws Exception {
+        JwtAuthenticationFilter jwtAuthenticationFilter = new JwtAuthenticationFilter();
+        jwtAuthenticationFilter.setAuthenticationSuccessHandler(new SecurityAuthenticationSuccessHandler());
+        jwtAuthenticationFilter.setAuthenticationFailureHandler(new SecurityAuthenticationFailHandler());
+        jwtAuthenticationFilter.setRequiresAuthenticationRequestMatcher(new AntPathRequestMatcher("/api/login", "POST"));
+        jwtAuthenticationFilter.setAuthenticationManager(authenticationManagerBean());
+        return jwtAuthenticationFilter;
+    }
+
+    @Bean
+    public JwtAuthorizationFilter jwtAuthorizationFilter(UserDetailsService shieldJdbcUserDetailsServiceImpl) {
+        return new JwtAuthorizationFilter(shieldJdbcUserDetailsServiceImpl);
+    }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
