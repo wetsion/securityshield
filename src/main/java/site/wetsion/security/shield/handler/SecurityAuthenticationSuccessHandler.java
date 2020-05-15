@@ -30,6 +30,7 @@ public class SecurityAuthenticationSuccessHandler implements AuthenticationSucce
             object.put("msg", "登录成功");
             object.put("data", "Bearer " + token);
             response.setStatus(HttpStatus.OK.value());
+            response.setHeader("Authorization", "Bearer " + token);
             response.getWriter().write(object.toJSONString());
         }
     }
